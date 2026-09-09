@@ -92,15 +92,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         freq: 1.2,
         amp: 1.05,
         sky: [0.4, 0.7, 0.9],
-          clouds: [1, 1, 1],
+        clouds: [1, 1, 1],
         speedX: 0.12,
         speedY: 0.08,
       },
     };
-  }
-
-  function getActiveLayers() {
-    return getActiveConfig().layers || [];
   }
 
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -137,6 +133,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     detail: gl.getUniformLocation(mountainsProgram, "u_detail"),
     yOffset: gl.getUniformLocation(mountainsProgram, "u_yOffset"),
     color: gl.getUniformLocation(mountainsProgram, "u_color"),
+    sky: gl.getUniformLocation(mountainsProgram, "u_sky_color"),
+    atmosphereStart: gl.getUniformLocation(
+      mountainsProgram,
+      "u_atmosphere_start",
+    ),
+    atmosphereStrength: gl.getUniformLocation(
+      mountainsProgram,
+      "u_atmosphere_strength",
+    ),
   };
 
   const cloudsUniformLocs = {
@@ -216,7 +221,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       gl.uniform1f(mountainsUniformLocs.amplitude, layer.amplitude);
       gl.uniform1f(mountainsUniformLocs.detail, layer.detail);
       gl.uniform1f(mountainsUniformLocs.yOffset, layer.yOffset);
+      gl.uniform1f(mountainsUniformLocs.atmosphereStart, layer.atmosphereStart);
+      gl.uniform1f(
+        mountainsUniformLocs.atmosphereStrength,
+        layer.atmosphereStrength,
+      );
       gl.uniform4fv(mountainsUniformLocs.color, layer.color);
+      gl.uniform3fv(mountainsUniformLocs.sky, cloudsConfig.sky);
 
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);
     }

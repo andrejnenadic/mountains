@@ -10,8 +10,11 @@ uniform float u_frequency;
 uniform float u_amplitude;
 uniform float u_detail;
 uniform float u_yOffset;
+uniform float u_atmosphere_start;
+uniform float u_atmosphere_strength;
 
 uniform vec4 u_color;
+uniform vec3 u_sky_color;
 
 float hash(vec2 p) {
   p += u_seed;
@@ -66,5 +69,9 @@ void main() {
   float aa_scale = .5;
   float mask = smoothstep(-aa_scale * aa, aa_scale * aa, distance);
 
-  fragColor = mask * u_color;
+  float atmosphere = smoothstep(u_atmosphere_start, 1., 1. - distance);
+  vec3 color = mix(u_color.xyz, u_sky_color, atmosphere * u_atmosphere_strength);
+  color += atmosphere * u_atmosphere_strength * 0.25;
+
+  fragColor = vec4(color, mask * u_color.a);
 }

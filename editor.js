@@ -20,6 +20,8 @@ const DEFAULT_LAYER_GROUPS = {
         amplitude: 0.63,
         detail: 0.46,
         yOffset: 0,
+        atmosphereStart: 0.8,
+        atmosphereStrength: 0.08,
         color: [0.4667, 0.6235, 0.651, 1],
       },
       {
@@ -28,6 +30,8 @@ const DEFAULT_LAYER_GROUPS = {
         amplitude: 0.85,
         detail: 0.13,
         yOffset: 0,
+        atmosphereStart: 0.72,
+        atmosphereStrength: 0.12,
         color: [0.2549, 0.4196, 0.4549, 1],
       },
       {
@@ -36,6 +40,8 @@ const DEFAULT_LAYER_GROUPS = {
         amplitude: 0.42,
         detail: 0.22,
         yOffset: -0.15,
+        atmosphereStart: 0.68,
+        atmosphereStrength: 0.15,
         color: [0.2, 0.2392, 0.302, 1],
       },
     ],
@@ -56,6 +62,8 @@ const DEFAULT_LAYER_GROUPS = {
         amplitude: 0.58,
         detail: 0.18,
         yOffset: 0.05,
+        atmosphereStart: 0.76,
+        atmosphereStrength: 0.11,
         color: [0.36, 0.48, 0.52, 1],
       },
       {
@@ -64,6 +72,8 @@ const DEFAULT_LAYER_GROUPS = {
         amplitude: 0.7,
         detail: 0.12,
         yOffset: -0.08,
+        atmosphereStart: 0.7,
+        atmosphereStrength: 0.14,
         color: [0.2, 0.35, 0.42, 1],
       },
     ],
@@ -84,6 +94,8 @@ const DEFAULT_LAYER_GROUPS = {
         amplitude: 0.52,
         detail: 0.16,
         yOffset: 0.12,
+        atmosphereStart: 0.72,
+        atmosphereStrength: 0.13,
         color: [0.3, 0.41, 0.48, 1],
       },
       {
@@ -92,6 +104,8 @@ const DEFAULT_LAYER_GROUPS = {
         amplitude: 0.8,
         detail: 0.24,
         yOffset: -0.12,
+        atmosphereStart: 0.66,
+        atmosphereStrength: 0.16,
         color: [0.14, 0.22, 0.28, 1],
       },
     ],
@@ -124,6 +138,12 @@ function sanitizeLayer(rawLayer, fallbackExpanded = true) {
     amplitude: Number.isFinite(layer.amplitude) ? layer.amplitude : 0.25,
     detail: Number.isFinite(layer.detail) ? layer.detail : 0.05,
     yOffset: Number.isFinite(layer.yOffset) ? layer.yOffset : 0,
+    atmosphereStart: Number.isFinite(layer.atmosphereStart)
+      ? layer.atmosphereStart
+      : 0.75,
+    atmosphereStrength: Number.isFinite(layer.atmosphereStrength)
+      ? layer.atmosphereStrength
+      : 0.1,
     color: [
       clamp(Number(color[0]) || 0, 0, 1),
       clamp(Number(color[1]) || 0, 0, 1),
@@ -148,6 +168,8 @@ function layersForStorage(rawLayers) {
     amplitude: layer.amplitude,
     detail: layer.detail,
     yOffset: layer.yOffset,
+    atmosphereStart: layer.atmosphereStart,
+    atmosphereStrength: layer.atmosphereStrength,
     color: [...layer.color],
     isExpanded: layer.isExpanded,
   }));
@@ -162,6 +184,8 @@ function formatLayerEntry(layer) {
     `      amplitude: ${Number(layer.amplitude.toFixed(4))},`,
     `      detail: ${Number(layer.detail.toFixed(4))},`,
     `      yOffset: ${Number(layer.yOffset.toFixed(4))},`,
+    `      atmosphereStart: ${Number(layer.atmosphereStart.toFixed(4))},`,
+    `      atmosphereStrength: ${Number(layer.atmosphereStrength.toFixed(4))},`,
     `      color: [${color.join(", ")}],`,
     "    },",
   ].join("\n");
@@ -346,6 +370,8 @@ const LAYER_FIELDS = [
   { key: "amplitude", label: "Amplitude", step: 0.01 },
   { key: "detail", label: "Detail", step: 0.01 },
   { key: "yOffset", label: "YOffset", step: 0.01 },
+  { key: "atmosphereStart", label: "Atm Start", step: 0.01 },
+  { key: "atmosphereStrength", label: "Atm Strength", step: 0.01 },
 ];
 
 function channelToHex(value) {
