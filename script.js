@@ -81,10 +81,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     return "desktop";
   }
 
-  function getActiveLayers() {
+  function getActiveConfig() {
     const groups = window.layerGroups || {};
     const profile = getProfileName();
-    return groups[profile] || groups.desktop || [];
+    const activeGroup = groups[profile] ||
+      groups.desktop || { layers: [], clouds: {} };
+    return {
+      layers: Array.isArray(activeGroup.layers) ? activeGroup.layers : [],
+      clouds: activeGroup.clouds || {
+        freq: 1.2,
+        amp: 1.05,
+        sky: [0.4, 0.7, 0.9],
+        clouds: [1, 1, 1],
+      },
+    };
+  }
+
+  function getActiveLayers() {
+    return getActiveConfig().layers || [];
   }
 
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -164,7 +178,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    const activeLayers = getActiveLayers();
+    const activeConfig = getActiveConfig();
+    const activeLayers = activeConfig.layers || [];
+    const cloudsConfig = activeConfig.clouds || {
+      freq: 1.2,
+      amp: 1.05,
+      sky: [0.4, 0.7, 0.9],
+      clouds: [1, 1, 1],
+    };
 
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.bindVertexArray(vao);
@@ -173,10 +194,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     gl.useProgram(cloudsProgram);
     gl.uniform1f(cloudsUniformLocs.seed, seed);
     gl.uniform1f(cloudsUniformLocs.time, now / 1000);
-    gl.uniform1f(cloudsUniformLocs.freq, 1);
-    gl.uniform1f(cloudsUniformLocs.amp, 1);
-    gl.uniform3fv(cloudsUniformLocs.sky, [0.4, 0.7, 0.9]);
-    gl.uniform3fv(cloudsUniformLocs.clouds, [1, 1, 1]);
+    gl.uniform1f(cloudsUniformLocs.freq, cloudsConfig.freq);
+    gl.uniform1f(cloudsUniformLocs.amp, cloudsConfig.amp);
+    gl.uniform3fv(cloudsUniformLocs.sky, cloudsConfig.sky);
+    gl.uniform3fv(cloudsUniformLocs.clouds, cloudsConfig.clouds);
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);
 
     // mountains

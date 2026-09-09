@@ -99,7 +99,8 @@ canvas {
   gap: 10px;
 }
 
-.layer-card {
+.layer-card,
+.cloud-card {
   border: 1px solid #d4deec;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.95);
@@ -108,6 +109,16 @@ canvas {
 
 .layer-card[open] {
   padding-bottom: 10px;
+}
+
+.cloud-card {
+  display: grid;
+  gap: 8px;
+}
+
+.cloud-card h3 {
+  margin: 0;
+  font-size: 14px;
 }
 
 .layer-row {

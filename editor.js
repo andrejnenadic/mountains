@@ -2,69 +2,100 @@ const STORAGE_KEY = "mountains.layerGroups";
 const PROFILE_ORDER = ["desktop", "tablet", "mobile"];
 const BREAKPOINTS = { mobile: 768, tablet: 1024 };
 
+const DEFAULT_CLOUD_SETTINGS = {
+  freq: 1.2,
+  amp: 1.05,
+  sky: [0.4, 0.7, 0.9],
+  clouds: [1, 1, 1],
+};
+
 const DEFAULT_LAYER_GROUPS = {
-  desktop: [
-    {
-      seed: 23.1,
-      frequency: 0.82,
-      amplitude: 0.63,
-      detail: 0.46,
-      yOffset: 0,
-      color: [0.4667, 0.6235, 0.651, 1],
+  desktop: {
+    layers: [
+      {
+        seed: 23.1,
+        frequency: 0.82,
+        amplitude: 0.63,
+        detail: 0.46,
+        yOffset: 0,
+        color: [0.4667, 0.6235, 0.651, 1],
+      },
+      {
+        seed: 76.5,
+        frequency: 2.25,
+        amplitude: 0.85,
+        detail: 0.13,
+        yOffset: 0,
+        color: [0.2549, 0.4196, 0.4549, 1],
+      },
+      {
+        seed: 108.5,
+        frequency: 3.5,
+        amplitude: 0.42,
+        detail: 0.22,
+        yOffset: -0.15,
+        color: [0.2, 0.2392, 0.302, 1],
+      },
+    ],
+    clouds: {
+      freq: 1.2,
+      amp: 1.05,
+      sky: [0.4, 0.7, 0.9],
+      clouds: [1, 1, 1],
     },
-    {
-      seed: 76.5,
-      frequency: 2.25,
-      amplitude: 0.85,
-      detail: 0.13,
-      yOffset: 0,
-      color: [0.2549, 0.4196, 0.4549, 1],
+  },
+  tablet: {
+    layers: [
+      {
+        seed: 31.2,
+        frequency: 1.1,
+        amplitude: 0.58,
+        detail: 0.18,
+        yOffset: 0.05,
+        color: [0.36, 0.48, 0.52, 1],
+      },
+      {
+        seed: 92.4,
+        frequency: 2.8,
+        amplitude: 0.7,
+        detail: 0.12,
+        yOffset: -0.08,
+        color: [0.2, 0.35, 0.42, 1],
+      },
+    ],
+    clouds: {
+      freq: 1.1,
+      amp: 1.0,
+      sky: [0.43, 0.72, 0.88],
+      clouds: [0.9, 0.95, 1],
     },
-    {
-      seed: 108.5,
-      frequency: 3.5,
-      amplitude: 0.42,
-      detail: 0.22,
-      yOffset: -0.15,
-      color: [0.2, 0.2392, 0.302, 1],
+  },
+  mobile: {
+    layers: [
+      {
+        seed: 42.7,
+        frequency: 1.4,
+        amplitude: 0.52,
+        detail: 0.16,
+        yOffset: 0.12,
+        color: [0.3, 0.41, 0.48, 1],
+      },
+      {
+        seed: 118.9,
+        frequency: 3.6,
+        amplitude: 0.8,
+        detail: 0.24,
+        yOffset: -0.12,
+        color: [0.14, 0.22, 0.28, 1],
+      },
+    ],
+    clouds: {
+      freq: 1.45,
+      amp: 1.2,
+      sky: [0.38, 0.66, 0.8],
+      clouds: [1, 1, 1],
     },
-  ],
-  tablet: [
-    {
-      seed: 31.2,
-      frequency: 1.1,
-      amplitude: 0.58,
-      detail: 0.18,
-      yOffset: 0.05,
-      color: [0.36, 0.48, 0.52, 1],
-    },
-    {
-      seed: 92.4,
-      frequency: 2.8,
-      amplitude: 0.7,
-      detail: 0.12,
-      yOffset: -0.08,
-      color: [0.2, 0.35, 0.42, 1],
-    },
-  ],
-  mobile: [
-    {
-      seed: 42.7,
-      frequency: 1.4,
-      amplitude: 0.52,
-      detail: 0.16,
-      yOffset: 0.12,
-      color: [0.3, 0.41, 0.48, 1],
-    },
-    {
-      seed: 118.9,
-      frequency: 3.6,
-      amplitude: 0.8,
-      detail: 0.24,
-      yOffset: -0.12,
-      color: [0.14, 0.22, 0.28, 1],
-    },
-  ],
+  },
 };
 
 function lerp(start, end, t) {
@@ -128,13 +159,81 @@ function formatLayerEntry(layer) {
   ].join("\n");
 }
 
+function sanitizeCloudSettings(rawSettings = {}) {
+  const settings = rawSettings || {};
+  const sky = Array.isArray(settings.sky)
+    ? settings.sky
+    : DEFAULT_CLOUD_SETTINGS.sky;
+  const clouds = Array.isArray(settings.clouds)
+    ? settings.clouds
+    : DEFAULT_CLOUD_SETTINGS.clouds;
+
+  return {
+    freq: Number.isFinite(settings.freq)
+      ? settings.freq
+      : DEFAULT_CLOUD_SETTINGS.freq,
+    amp: Number.isFinite(settings.amp)
+      ? settings.amp
+      : DEFAULT_CLOUD_SETTINGS.amp,
+    sky: [
+      clamp(Number(sky[0]) || 0, 0, 1),
+      clamp(Number(sky[1]) || 0, 0, 1),
+      clamp(Number(sky[2]) || 0, 0, 1),
+    ],
+    clouds: [
+      clamp(Number(clouds[0]) || 0, 0, 1),
+      clamp(Number(clouds[1]) || 0, 0, 1),
+      clamp(Number(clouds[2]) || 0, 0, 1),
+    ],
+  };
+}
+
+function sanitizeConfigGroup(rawGroup = {}) {
+  const group = rawGroup || {};
+  const layers = Array.isArray(group.layers) ? group.layers : [];
+  return {
+    layers: cloneLayers(layers, true),
+    clouds: sanitizeCloudSettings(group.clouds),
+  };
+}
+
+function getDefaultGroups() {
+  return Object.fromEntries(
+    PROFILE_ORDER.map((profile) => [
+      profile,
+      {
+        layers: cloneLayers(DEFAULT_LAYER_GROUPS[profile].layers, true),
+        clouds: sanitizeCloudSettings(DEFAULT_LAYER_GROUPS[profile].clouds),
+      },
+    ]),
+  );
+}
+
+function cloudSettingsToJsObjectString(cloudSettings, indent = "  ") {
+  const sky = cloudSettings.sky.map((channel) => Number(channel.toFixed(4)));
+  const clouds = cloudSettings.clouds.map((channel) => Number(channel.toFixed(4)));
+
+  return [
+    `${indent}clouds: {`,
+    `${indent}  freq: ${Number(cloudSettings.freq.toFixed(4))},`,
+    `${indent}  amp: ${Number(cloudSettings.amp.toFixed(4))},`,
+    `${indent}  sky: [${sky.join(", ")}],`,
+    `${indent}  clouds: [${clouds.join(", ")}],`,
+    `${indent}},`,
+  ].join("\n");
+}
+
 function layersToJsObjectString(rawGroups) {
   const sections = PROFILE_ORDER.map((profile) => {
-    const entries = rawGroups[profile].map((layer) => formatLayerEntry(layer));
+    const group = sanitizeConfigGroup(rawGroups[profile]);
+    const entries = group.layers.map((layer) => formatLayerEntry(layer));
     return [
-      `  ${profile}: [`,
+      `  ${profile}: {`,
+      "    layers: [",
       entries.join("\n"),
-      "  ],",
+      "    ],",
+      cloudSettingsToJsObjectString(group.clouds, "    "),
+      "  },",
     ].join("\n");
   });
 
@@ -153,12 +252,6 @@ function getProfileName(width = window.innerWidth) {
   return "desktop";
 }
 
-function getDefaultGroups() {
-  return Object.fromEntries(
-    PROFILE_ORDER.map((profile) => [profile, cloneLayers(DEFAULT_LAYER_GROUPS[profile], true)]),
-  );
-}
-
 function loadLayerGroups() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -173,8 +266,7 @@ function loadLayerGroups() {
 
     const nextGroups = getDefaultGroups();
     for (const profile of PROFILE_ORDER) {
-      const layers = Array.isArray(parsed[profile]) ? parsed[profile] : nextGroups[profile];
-      nextGroups[profile] = cloneLayers(layers, true);
+      nextGroups[profile] = sanitizeConfigGroup(parsed[profile] || nextGroups[profile]);
     }
 
     return nextGroups;
@@ -187,7 +279,11 @@ function saveLayerGroups(rawGroups) {
   try {
     const serialized = {};
     for (const profile of PROFILE_ORDER) {
-      serialized[profile] = layersForStorage(rawGroups[profile] || []);
+      const group = sanitizeConfigGroup(rawGroups[profile] || { layers: [], clouds: {} });
+      serialized[profile] = {
+        layers: layersForStorage(group.layers || []),
+        clouds: sanitizeCloudSettings(group.clouds),
+      };
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
   } catch {
@@ -214,14 +310,19 @@ async function copyTextToClipboard(text) {
 
 const layerGroups = loadLayerGroups();
 const currentProfile = () => getProfileName(window.innerWidth);
-const getActiveLayers = () => {
+const getActiveConfig = () => {
   const profile = currentProfile();
   return layerGroups[profile] || layerGroups.desktop;
 };
+const getActiveLayers = () => getActiveConfig().layers || [];
+const getActiveCloudSettings = () => getActiveConfig().clouds || sanitizeCloudSettings();
 window.layers = getActiveLayers();
 window.getActiveLayers = getActiveLayers;
+window.getActiveCloudSettings = getActiveCloudSettings;
 window.getProfileName = getProfileName;
 window.layerGroups = layerGroups;
+window.cloudSettings = getActiveCloudSettings();
+window.getActiveConfig = getActiveConfig;
 
 const LAYER_FIELDS = [
   { key: "seed", label: "Seed", step: 0.1 },
@@ -309,14 +410,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function refreshActiveLayers() {
-    const activeLayers = getActiveLayers();
+    const activeConfig = getActiveConfig();
+    const activeLayers = activeConfig.layers || [];
     window.layers = activeLayers;
+    window.cloudSettings = activeConfig.clouds || sanitizeCloudSettings();
     updateProfileLabel();
     return activeLayers;
   }
 
   for (const profile of PROFILE_ORDER) {
-    for (const layer of layerGroups[profile]) {
+    for (const layer of layerGroups[profile].layers) {
       layer.isExpanded = layer.isExpanded ?? true;
     }
   }
@@ -326,7 +429,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const activeLayers = refreshActiveLayers();
+    const activeConfig = getActiveConfig();
+    const activeLayers = activeConfig.layers || [];
+    const cloudSettings = activeConfig.clouds || sanitizeCloudSettings();
     layerListEl.innerHTML = "";
 
     activeLayers.forEach((layer, layerIndex) => {
@@ -363,7 +468,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const downButton = document.createElement("button");
       downButton.type = "button";
       downButton.textContent = "Down";
-      downButton.disabled = layerIndex === layers.length - 1;
+      downButton.disabled = layerIndex === activeLayers.length - 1;
       downButton.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -437,6 +542,138 @@ document.addEventListener("DOMContentLoaded", () => {
       layerCard.append(topRow, fieldsGrid);
       layerListEl.appendChild(layerCard);
     });
+
+    const cloudCard = document.createElement("div");
+    cloudCard.className = "cloud-card";
+
+    const cloudHeader = document.createElement("h3");
+    cloudHeader.textContent = "Clouds";
+
+    const cloudFields = document.createElement("div");
+    cloudFields.className = "layer-fields";
+
+    const cloudFreqField = document.createElement("label");
+    cloudFreqField.className = "layer-field";
+    cloudFreqField.textContent = "Freq";
+    const cloudFreqInput = document.createElement("input");
+    cloudFreqInput.type = "number";
+    cloudFreqInput.step = "0.01";
+    cloudFreqInput.value = String(cloudSettings.freq);
+    cloudFreqInput.addEventListener("input", () => {
+      const value = Number.parseFloat(cloudFreqInput.value);
+      if (!Number.isNaN(value)) {
+        cloudSettings.freq = value;
+        saveLayerGroups(layerGroups);
+        window.cloudSettings = cloudSettings;
+      }
+    });
+    cloudFreqField.appendChild(cloudFreqInput);
+
+    const cloudAmpField = document.createElement("label");
+    cloudAmpField.className = "layer-field";
+    cloudAmpField.textContent = "Amp";
+    const cloudAmpInput = document.createElement("input");
+    cloudAmpInput.type = "number";
+    cloudAmpInput.step = "0.01";
+    cloudAmpInput.value = String(cloudSettings.amp);
+    cloudAmpInput.addEventListener("input", () => {
+      const value = Number.parseFloat(cloudAmpInput.value);
+      if (!Number.isNaN(value)) {
+        cloudSettings.amp = value;
+        saveLayerGroups(layerGroups);
+        window.cloudSettings = cloudSettings;
+      }
+    });
+    cloudAmpField.appendChild(cloudAmpInput);
+
+    const skyColorField = document.createElement("label");
+    skyColorField.className = "layer-field";
+    skyColorField.textContent = "Sky Hex";
+    const skyColorInput = document.createElement("input");
+    skyColorInput.type = "text";
+    skyColorInput.placeholder = "#RRGGBB";
+    skyColorInput.value = colorToHex([
+      cloudSettings.sky[0],
+      cloudSettings.sky[1],
+      cloudSettings.sky[2],
+      1,
+    ]);
+    skyColorInput.addEventListener("change", () => {
+      const nextColor = hexToColor(skyColorInput.value, [
+        cloudSettings.sky[0],
+        cloudSettings.sky[1],
+        cloudSettings.sky[2],
+        1,
+      ]);
+      if (nextColor) {
+        cloudSettings.sky = nextColor.slice(0, 3);
+        skyColorInput.value = colorToHex([
+          cloudSettings.sky[0],
+          cloudSettings.sky[1],
+          cloudSettings.sky[2],
+          1,
+        ]);
+        saveLayerGroups(layerGroups);
+        window.cloudSettings = cloudSettings;
+      } else {
+        skyColorInput.value = colorToHex([
+          cloudSettings.sky[0],
+          cloudSettings.sky[1],
+          cloudSettings.sky[2],
+          1,
+        ]);
+      }
+    });
+    skyColorField.appendChild(skyColorInput);
+
+    const cloudColorField = document.createElement("label");
+    cloudColorField.className = "layer-field";
+    cloudColorField.textContent = "Cloud Hex";
+    const cloudColorInput = document.createElement("input");
+    cloudColorInput.type = "text";
+    cloudColorInput.placeholder = "#RRGGBB";
+    cloudColorInput.value = colorToHex([
+      cloudSettings.clouds[0],
+      cloudSettings.clouds[1],
+      cloudSettings.clouds[2],
+      1,
+    ]);
+    cloudColorInput.addEventListener("change", () => {
+      const nextColor = hexToColor(cloudColorInput.value, [
+        cloudSettings.clouds[0],
+        cloudSettings.clouds[1],
+        cloudSettings.clouds[2],
+        1,
+      ]);
+      if (nextColor) {
+        cloudSettings.clouds = nextColor.slice(0, 3);
+        cloudColorInput.value = colorToHex([
+          cloudSettings.clouds[0],
+          cloudSettings.clouds[1],
+          cloudSettings.clouds[2],
+          1,
+        ]);
+        saveLayerGroups(layerGroups);
+        window.cloudSettings = cloudSettings;
+      } else {
+        cloudColorInput.value = colorToHex([
+          cloudSettings.clouds[0],
+          cloudSettings.clouds[1],
+          cloudSettings.clouds[2],
+          1,
+        ]);
+      }
+    });
+    cloudColorField.appendChild(cloudColorInput);
+
+    cloudFields.append(
+      cloudFreqField,
+      cloudAmpField,
+      skyColorField,
+      cloudColorField,
+    );
+    cloudCard.append(cloudHeader, cloudFields);
+    layerListEl.appendChild(cloudCard);
   }
 
   if (addLayerButtonEl) {
@@ -456,8 +693,12 @@ document.addEventListener("DOMContentLoaded", () => {
       event.stopPropagation();
 
       const profile = currentProfile();
-      layerGroups[profile] = cloneLayers(DEFAULT_LAYER_GROUPS[profile], true);
+      layerGroups[profile] = {
+        layers: cloneLayers(DEFAULT_LAYER_GROUPS[profile].layers, true),
+        clouds: sanitizeCloudSettings(DEFAULT_LAYER_GROUPS[profile].clouds),
+      };
       saveLayerGroups(layerGroups);
+      window.cloudSettings = layerGroups[profile].clouds;
       renderLayerEditor();
     });
   }
