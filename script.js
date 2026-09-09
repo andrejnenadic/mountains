@@ -75,10 +75,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  const layers = window.layers;
-  if (!Array.isArray(layers)) {
-    console.log("No layers data");
-    return;
+  function getProfileName(width = window.innerWidth) {
+    if (width < 768) return "mobile";
+    if (width < 1024) return "tablet";
+    return "desktop";
+  }
+
+  function getActiveLayers() {
+    const groups = window.layerGroups || {};
+    const profile = getProfileName();
+    return groups[profile] || groups.desktop || [];
   }
 
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -156,6 +162,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    const activeLayers = getActiveLayers();
+
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.bindVertexArray(vao);
 
@@ -169,7 +177,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // mountains
     gl.useProgram(mountainsProgram);
-    for (const layer of layers) {
+    for (const layer of activeLayers) {
       gl.uniform1f(mountainsUniformLocs.seed, layer.seed);
       gl.uniform1f(mountainsUniformLocs.frequency, layer.frequency);
       gl.uniform1f(mountainsUniformLocs.amplitude, layer.amplitude);

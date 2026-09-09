@@ -1,31 +1,71 @@
-const STORAGE_KEY = "mountains.layers";
+const STORAGE_KEY = "mountains.layerGroups";
+const PROFILE_ORDER = ["desktop", "tablet", "mobile"];
+const BREAKPOINTS = { mobile: 768, tablet: 1024 };
 
-const DEFAULT_LAYERS = [
-  {
-    seed: 23.1,
-    frequency: 0.82,
-    amplitude: 0.63,
-    detail: 0.46,
-    yOffset: 0,
-    color: [0.4667, 0.6235, 0.651, 1],
-  },
-  {
-    seed: 76.5,
-    frequency: 2.25,
-    amplitude: 0.85,
-    detail: 0.13,
-    yOffset: 0,
-    color: [0.2549, 0.4196, 0.4549, 1],
-  },
-  {
-    seed: 108.5,
-    frequency: 3.5,
-    amplitude: 0.42,
-    detail: 0.22,
-    yOffset: -0.15,
-    color: [0.2, 0.2392, 0.302, 1],
-  },
-];
+const DEFAULT_LAYER_GROUPS = {
+  desktop: [
+    {
+      seed: 23.1,
+      frequency: 0.82,
+      amplitude: 0.63,
+      detail: 0.46,
+      yOffset: 0,
+      color: [0.4667, 0.6235, 0.651, 1],
+    },
+    {
+      seed: 76.5,
+      frequency: 2.25,
+      amplitude: 0.85,
+      detail: 0.13,
+      yOffset: 0,
+      color: [0.2549, 0.4196, 0.4549, 1],
+    },
+    {
+      seed: 108.5,
+      frequency: 3.5,
+      amplitude: 0.42,
+      detail: 0.22,
+      yOffset: -0.15,
+      color: [0.2, 0.2392, 0.302, 1],
+    },
+  ],
+  tablet: [
+    {
+      seed: 31.2,
+      frequency: 1.1,
+      amplitude: 0.58,
+      detail: 0.18,
+      yOffset: 0.05,
+      color: [0.36, 0.48, 0.52, 1],
+    },
+    {
+      seed: 92.4,
+      frequency: 2.8,
+      amplitude: 0.7,
+      detail: 0.12,
+      yOffset: -0.08,
+      color: [0.2, 0.35, 0.42, 1],
+    },
+  ],
+  mobile: [
+    {
+      seed: 42.7,
+      frequency: 1.4,
+      amplitude: 0.52,
+      detail: 0.16,
+      yOffset: 0.12,
+      color: [0.3, 0.41, 0.48, 1],
+    },
+    {
+      seed: 118.9,
+      frequency: 3.6,
+      amplitude: 0.8,
+      detail: 0.24,
+      yOffset: -0.12,
+      color: [0.14, 0.22, 0.28, 1],
+    },
+  ],
+};
 
 function lerp(start, end, t) {
   return start + (end - start) * t;
@@ -74,48 +114,82 @@ function layersForStorage(rawLayers) {
   }));
 }
 
-function layersToJsArrayString(rawLayers) {
-  const lines = rawLayers.map((layer) => {
-    const color = layer.color.map((channel) => Number(channel.toFixed(4)));
+function formatLayerEntry(layer) {
+  const color = layer.color.map((channel) => Number(channel.toFixed(4)));
+  return [
+    "    {",
+    `      seed: ${Number(layer.seed.toFixed(4))},`,
+    `      frequency: ${Number(layer.frequency.toFixed(4))},`,
+    `      amplitude: ${Number(layer.amplitude.toFixed(4))},`,
+    `      detail: ${Number(layer.detail.toFixed(4))},`,
+    `      yOffset: ${Number(layer.yOffset.toFixed(4))},`,
+    `      color: [${color.join(", ")}],`,
+    "    },",
+  ].join("\n");
+}
+
+function layersToJsObjectString(rawGroups) {
+  const sections = PROFILE_ORDER.map((profile) => {
+    const entries = rawGroups[profile].map((layer) => formatLayerEntry(layer));
     return [
-      "  {",
-      `    seed: ${Number(layer.seed.toFixed(4))},`,
-      `    frequency: ${Number(layer.frequency.toFixed(4))},`,
-      `    amplitude: ${Number(layer.amplitude.toFixed(4))},`,
-      `    detail: ${Number(layer.detail.toFixed(4))},`,
-      `    yOffset: ${Number(layer.yOffset.toFixed(4))},`,
-      `    color: [${color.join(", ")}],`,
-      "  },",
+      `  ${profile}: [`,
+      entries.join("\n"),
+      "  ],",
     ].join("\n");
   });
 
-  return `[\n${lines.join("\n")}\n]`;
+  return `{
+${sections.join("\n")}
+}`;
 }
 
-function loadLayers() {
+function getProfileName(width = window.innerWidth) {
+  if (width < BREAKPOINTS.mobile) {
+    return "mobile";
+  }
+  if (width < BREAKPOINTS.tablet) {
+    return "tablet";
+  }
+  return "desktop";
+}
+
+function getDefaultGroups() {
+  return Object.fromEntries(
+    PROFILE_ORDER.map((profile) => [profile, cloneLayers(DEFAULT_LAYER_GROUPS[profile], true)]),
+  );
+}
+
+function loadLayerGroups() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) {
-      return cloneLayers(DEFAULT_LAYERS, true);
+      return getDefaultGroups();
     }
 
     const parsed = JSON.parse(stored);
-    if (!Array.isArray(parsed)) {
-      return cloneLayers(DEFAULT_LAYERS, true);
+    if (!parsed || typeof parsed !== "object") {
+      return getDefaultGroups();
     }
 
-    return cloneLayers(parsed, true);
+    const nextGroups = getDefaultGroups();
+    for (const profile of PROFILE_ORDER) {
+      const layers = Array.isArray(parsed[profile]) ? parsed[profile] : nextGroups[profile];
+      nextGroups[profile] = cloneLayers(layers, true);
+    }
+
+    return nextGroups;
   } catch {
-    return cloneLayers(DEFAULT_LAYERS, true);
+    return getDefaultGroups();
   }
 }
 
-function saveLayers(rawLayers) {
+function saveLayerGroups(rawGroups) {
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(layersForStorage(rawLayers)),
-    );
+    const serialized = {};
+    for (const profile of PROFILE_ORDER) {
+      serialized[profile] = layersForStorage(rawGroups[profile] || []);
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
   } catch {
     // Ignore storage errors to keep editing functional.
   }
@@ -138,7 +212,16 @@ async function copyTextToClipboard(text) {
   document.body.removeChild(textarea);
 }
 
-const layers = loadLayers();
+const layerGroups = loadLayerGroups();
+const currentProfile = () => getProfileName(window.innerWidth);
+const getActiveLayers = () => {
+  const profile = currentProfile();
+  return layerGroups[profile] || layerGroups.desktop;
+};
+window.layers = getActiveLayers();
+window.getActiveLayers = getActiveLayers;
+window.getProfileName = getProfileName;
+window.layerGroups = layerGroups;
 
 const LAYER_FIELDS = [
   { key: "seed", label: "Seed", step: 0.1 },
@@ -210,33 +293,50 @@ function moveItem(array, fromIndex, toIndex) {
   array.splice(toIndex, 0, item);
 }
 
-window.layers = layers;
-
 document.addEventListener("DOMContentLoaded", () => {
   const layerListEl = document.querySelector("#layerList");
   const addLayerButtonEl = document.querySelector("#addLayerButton");
   const resetLayersButtonEl = document.querySelector("#resetLayersButton");
   const exportLayersButtonEl = document.querySelector("#exportLayersButton");
+  const profileLabelEl = document.querySelector("#profileLabel");
 
-  layers.forEach((layer) => {
-    layer.isExpanded = layer.isExpanded ?? true;
-  });
+  function updateProfileLabel() {
+    if (!profileLabelEl) {
+      return;
+    }
+
+    profileLabelEl.textContent = currentProfile();
+  }
+
+  function refreshActiveLayers() {
+    const activeLayers = getActiveLayers();
+    window.layers = activeLayers;
+    updateProfileLabel();
+    return activeLayers;
+  }
+
+  for (const profile of PROFILE_ORDER) {
+    for (const layer of layerGroups[profile]) {
+      layer.isExpanded = layer.isExpanded ?? true;
+    }
+  }
 
   function renderLayerEditor() {
     if (!layerListEl) {
       return;
     }
 
+    const activeLayers = refreshActiveLayers();
     layerListEl.innerHTML = "";
 
-    layers.forEach((layer, layerIndex) => {
+    activeLayers.forEach((layer, layerIndex) => {
       const layerCard = document.createElement("details");
       layerCard.className = "layer-card";
       layerCard.open = layer.isExpanded !== false;
 
       layerCard.addEventListener("toggle", () => {
         layer.isExpanded = layerCard.open;
-        saveLayers(layers);
+        saveLayerGroups(layerGroups);
       });
 
       const topRow = document.createElement("summary");
@@ -255,8 +355,8 @@ document.addEventListener("DOMContentLoaded", () => {
       upButton.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        moveItem(layers, layerIndex, layerIndex - 1);
-        saveLayers(layers);
+        moveItem(activeLayers, layerIndex, layerIndex - 1);
+        saveLayerGroups(layerGroups);
         renderLayerEditor();
       });
 
@@ -267,8 +367,8 @@ document.addEventListener("DOMContentLoaded", () => {
       downButton.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        moveItem(layers, layerIndex, layerIndex + 1);
-        saveLayers(layers);
+        moveItem(activeLayers, layerIndex, layerIndex + 1);
+        saveLayerGroups(layerGroups);
         renderLayerEditor();
       });
 
@@ -278,8 +378,8 @@ document.addEventListener("DOMContentLoaded", () => {
       deleteButton.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        layers.splice(layerIndex, 1);
-        saveLayers(layers);
+        activeLayers.splice(layerIndex, 1);
+        saveLayerGroups(layerGroups);
         renderLayerEditor();
       });
 
@@ -303,7 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const value = Number.parseFloat(input.value);
           if (!Number.isNaN(value)) {
             layer[field.key] = value;
-            saveLayers(layers);
+            saveLayerGroups(layerGroups);
           }
         });
 
@@ -325,7 +425,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (nextColor) {
           layer.color = nextColor;
           colorInput.value = colorToHex(layer.color);
-          saveLayers(layers);
+          saveLayerGroups(layerGroups);
         } else {
           colorInput.value = colorToHex(layer.color);
         }
@@ -343,8 +443,9 @@ document.addEventListener("DOMContentLoaded", () => {
     addLayerButtonEl.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      layers.push(createDefaultLayer(layers.length));
-      saveLayers(layers);
+      const activeLayers = getActiveLayers();
+      activeLayers.push(createDefaultLayer(activeLayers.length));
+      saveLayerGroups(layerGroups);
       renderLayerEditor();
     });
   }
@@ -354,8 +455,9 @@ document.addEventListener("DOMContentLoaded", () => {
       event.preventDefault();
       event.stopPropagation();
 
-      layers.splice(0, layers.length, ...cloneLayers(DEFAULT_LAYERS, true));
-      saveLayers(layers);
+      const profile = currentProfile();
+      layerGroups[profile] = cloneLayers(DEFAULT_LAYER_GROUPS[profile], true);
+      saveLayerGroups(layerGroups);
       renderLayerEditor();
     });
   }
@@ -365,7 +467,7 @@ document.addEventListener("DOMContentLoaded", () => {
       event.preventDefault();
       event.stopPropagation();
 
-      const text = layersToJsArrayString(layers);
+      const text = layersToJsObjectString(layerGroups);
       try {
         await copyTextToClipboard(text);
         exportLayersButtonEl.textContent = "Copied";
@@ -379,6 +481,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  window.addEventListener("resize", () => {
+    renderLayerEditor();
+  });
+
   renderLayerEditor();
-  saveLayers(layers);
+  saveLayerGroups(layerGroups);
 });
