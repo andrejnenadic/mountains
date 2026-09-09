@@ -1,22 +1,3 @@
-const layers = [
-  {
-    seed: 12.4,
-    frequency: 0.7,
-    amplitude: 0.22,
-    detail: 0.03,
-    yOffset: 0.15,
-    color: [0, 0, 1, 1],
-  },
-  {
-    seed: 83.1,
-    frequency: 1.0,
-    amplitude: 0.35,
-    detail: 0.06,
-    yOffset: 0.0,
-    color: [1, 0, 0, 1],
-  },
-];
-
 const FPS = 60;
 const FRAME_TIME = 1000 / FPS;
 
@@ -87,6 +68,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const gl = canvas.getContext("webgl2");
   if (!gl) {
     console.log("No webgl context");
+    return;
+  }
+
+  const layers = window.layers;
+  if (!Array.isArray(layers)) {
+    console.log("No layers data");
     return;
   }
 

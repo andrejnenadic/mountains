@@ -1,13 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>mountains</title>
   <link href="./style.css" rel="stylesheet">
 </head>
+
 <body>
   <canvas></canvas>
+
+  <details class="layer-editor" id="layerEditor" open>
+    <summary class="layer-editor-header">
+      <h2>Layers</h2>
+      <div class="layer-editor-tools">
+        <button id="exportLayersButton" type="button">Export</button>
+        <button id="resetLayersButton" type="button">Reset</button>
+        <button id="addLayerButton" type="button" aria-label="Add layer">+</button>
+      </div>
+    </summary>
+    <div class="layer-editor-body">
+      <div class="layer-list" id="layerList"></div>
+    </div>
+  </details>
+
+  <script src="./editor.js"></script>
   <script src="./script.js"></script>
 </body>
+
 </html>
