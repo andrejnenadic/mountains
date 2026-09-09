@@ -17,7 +17,11 @@ async function compileShader(gl, name, type) {
   return null;
 }
 
-function createProgram(gl, frag, vert) {
+async function createProgram(gl, fragPath, vertPath) {
+  const vert = await compileShader(gl, vertPath, gl.VERTEX_SHADER);
+  const frag = await compileShader(gl, fragPath, gl.FRAGMENT_SHADER);
+  if (!vert || !frag) return;
+
   const program = gl.createProgram();
   gl.attachShader(program, vert);
   gl.attachShader(program, frag);
@@ -90,20 +94,34 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.addEventListener("resize", onResize);
   onResize();
 
-  const vert = await compileShader(gl, "./vert.glsl", gl.VERTEX_SHADER);
-  const frag = await compileShader(gl, "./frag.glsl", gl.FRAGMENT_SHADER);
-  if (!vert || !frag) return;
+  const mountainsProgram = await createProgram(
+    gl,
+    "./frag.glsl",
+    "./vert.glsl",
+  );
+  if (!mountainsProgram) return;
 
-  const program = createProgram(gl, frag, vert);
-  if (!program) return;
+  const cloudsProgram = await createProgram(
+    gl,
+    "./clouds-frag.glsl",
+    "./vert.glsl",
+  );
+  if (!cloudsProgram) return;
 
-  const uniformLocs = {
-    seed: gl.getUniformLocation(program, "u_seed"),
-    frequency: gl.getUniformLocation(program, "u_frequency"),
-    amplitude: gl.getUniformLocation(program, "u_amplitude"),
-    detail: gl.getUniformLocation(program, "u_detail"),
-    yOffset: gl.getUniformLocation(program, "u_yOffset"),
-    color: gl.getUniformLocation(program, "u_color"),
+  const mountainsUniformLocs = {
+    seed: gl.getUniformLocation(mountainsProgram, "u_seed"),
+    frequency: gl.getUniformLocation(mountainsProgram, "u_frequency"),
+    amplitude: gl.getUniformLocation(mountainsProgram, "u_amplitude"),
+    detail: gl.getUniformLocation(mountainsProgram, "u_detail"),
+    yOffset: gl.getUniformLocation(mountainsProgram, "u_yOffset"),
+    color: gl.getUniformLocation(mountainsProgram, "u_color"),
+  };
+
+  const cloudsUniformLocs = {
+    seed: gl.getUniformLocation(cloudsProgram, "u_seed"),
+    time: gl.getUniformLocation(cloudsProgram, "u_time"),
+    sky: gl.getUniformLocation(cloudsProgram, "u_sky_color"),
+    clouds: gl.getUniformLocation(cloudsProgram, "u_clouds_color"),
   };
 
   const vao = createBuffers(gl);
@@ -117,6 +135,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     lastFrameTime = performance.now();
   });
 
+  const seed = Math.random();
+
   requestAnimationFrame(animate);
   function animate(now) {
     requestAnimationFrame(animate);
@@ -128,7 +148,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     let frameDelta = now - lastFrameTime;
     lastFrameTime = now;
 
-    // Prevent huge spikes even if browser hiccups
+    // prevent huge spikes even if browser hiccups
     frameDelta = Math.min(frameDelta, 100);
 
     accumulator += frameDelta;
@@ -137,16 +157,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(program);
     gl.bindVertexArray(vao);
 
+    // clouds
+    gl.useProgram(cloudsProgram);
+    gl.uniform1f(cloudsUniformLocs.seed, seed);
+    gl.uniform1f(cloudsUniformLocs.time, now / 1000);
+    gl.uniform3fv(cloudsUniformLocs.sky, [0.4, 0.7, 0.9]);
+    gl.uniform3fv(cloudsUniformLocs.clouds, [1, 1, 1]);
+    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);
+
+    // mountains
+    gl.useProgram(mountainsProgram);
     for (const layer of layers) {
-      gl.uniform1f(uniformLocs.seed, layer.seed);
-      gl.uniform1f(uniformLocs.frequency, layer.frequency);
-      gl.uniform1f(uniformLocs.amplitude, layer.amplitude);
-      gl.uniform1f(uniformLocs.detail, layer.detail);
-      gl.uniform1f(uniformLocs.yOffset, layer.yOffset);
-      gl.uniform4fv(uniformLocs.color, layer.color);
+      gl.uniform1f(mountainsUniformLocs.seed, layer.seed);
+      gl.uniform1f(mountainsUniformLocs.frequency, layer.frequency);
+      gl.uniform1f(mountainsUniformLocs.amplitude, layer.amplitude);
+      gl.uniform1f(mountainsUniformLocs.detail, layer.detail);
+      gl.uniform1f(mountainsUniformLocs.yOffset, layer.yOffset);
+      gl.uniform4fv(mountainsUniformLocs.color, layer.color);
 
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);
     }
