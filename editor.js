@@ -5,6 +5,8 @@ const BREAKPOINTS = { mobile: 768, tablet: 1024 };
 const DEFAULT_CLOUD_SETTINGS = {
   freq: 1.2,
   amp: 1.05,
+  speedX: 0.12,
+  speedY: 0.08,
   sky: [0.4, 0.7, 0.9],
   clouds: [1, 1, 1],
 };
@@ -40,6 +42,8 @@ const DEFAULT_LAYER_GROUPS = {
     clouds: {
       freq: 1.2,
       amp: 1.05,
+      speedX: 0.12,
+      speedY: 0.08,
       sky: [0.4, 0.7, 0.9],
       clouds: [1, 1, 1],
     },
@@ -66,6 +70,8 @@ const DEFAULT_LAYER_GROUPS = {
     clouds: {
       freq: 1.1,
       amp: 1.0,
+      speedX: 0.18,
+      speedY: 0.1,
       sky: [0.43, 0.72, 0.88],
       clouds: [0.9, 0.95, 1],
     },
@@ -92,6 +98,8 @@ const DEFAULT_LAYER_GROUPS = {
     clouds: {
       freq: 1.45,
       amp: 1.2,
+      speedX: 0.2,
+      speedY: 0.12,
       sky: [0.38, 0.66, 0.8],
       clouds: [1, 1, 1],
     },
@@ -175,6 +183,12 @@ function sanitizeCloudSettings(rawSettings = {}) {
     amp: Number.isFinite(settings.amp)
       ? settings.amp
       : DEFAULT_CLOUD_SETTINGS.amp,
+    speedX: Number.isFinite(settings.speedX)
+      ? settings.speedX
+      : DEFAULT_CLOUD_SETTINGS.speedX,
+    speedY: Number.isFinite(settings.speedY)
+      ? settings.speedY
+      : DEFAULT_CLOUD_SETTINGS.speedY,
     sky: [
       clamp(Number(sky[0]) || 0, 0, 1),
       clamp(Number(sky[1]) || 0, 0, 1),
@@ -217,6 +231,8 @@ function cloudSettingsToJsObjectString(cloudSettings, indent = "  ") {
     `${indent}clouds: {`,
     `${indent}  freq: ${Number(cloudSettings.freq.toFixed(4))},`,
     `${indent}  amp: ${Number(cloudSettings.amp.toFixed(4))},`,
+    `${indent}  speedX: ${Number(cloudSettings.speedX.toFixed(4))},`,
+    `${indent}  speedY: ${Number(cloudSettings.speedY.toFixed(4))},`,
     `${indent}  sky: [${sky.join(", ")}],`,
     `${indent}  clouds: [${clouds.join(", ")}],`,
     `${indent}},`,
@@ -586,6 +602,40 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     cloudAmpField.appendChild(cloudAmpInput);
 
+    const cloudSpeedXField = document.createElement("label");
+    cloudSpeedXField.className = "layer-field";
+    cloudSpeedXField.textContent = "Speed X";
+    const cloudSpeedXInput = document.createElement("input");
+    cloudSpeedXInput.type = "number";
+    cloudSpeedXInput.step = "0.01";
+    cloudSpeedXInput.value = String(cloudSettings.speedX);
+    cloudSpeedXInput.addEventListener("input", () => {
+      const value = Number.parseFloat(cloudSpeedXInput.value);
+      if (!Number.isNaN(value)) {
+        cloudSettings.speedX = value;
+        saveLayerGroups(layerGroups);
+        window.cloudSettings = cloudSettings;
+      }
+    });
+    cloudSpeedXField.appendChild(cloudSpeedXInput);
+
+    const cloudSpeedYField = document.createElement("label");
+    cloudSpeedYField.className = "layer-field";
+    cloudSpeedYField.textContent = "Speed Y";
+    const cloudSpeedYInput = document.createElement("input");
+    cloudSpeedYInput.type = "number";
+    cloudSpeedYInput.step = "0.01";
+    cloudSpeedYInput.value = String(cloudSettings.speedY);
+    cloudSpeedYInput.addEventListener("input", () => {
+      const value = Number.parseFloat(cloudSpeedYInput.value);
+      if (!Number.isNaN(value)) {
+        cloudSettings.speedY = value;
+        saveLayerGroups(layerGroups);
+        window.cloudSettings = cloudSettings;
+      }
+    });
+    cloudSpeedYField.appendChild(cloudSpeedYInput);
+
     const skyColorField = document.createElement("label");
     skyColorField.className = "layer-field";
     skyColorField.textContent = "Sky Hex";
@@ -669,6 +719,8 @@ document.addEventListener("DOMContentLoaded", () => {
     cloudFields.append(
       cloudFreqField,
       cloudAmpField,
+      cloudSpeedXField,
+      cloudSpeedYField,
       skyColorField,
       cloudColorField,
     );

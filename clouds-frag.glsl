@@ -9,6 +9,8 @@ uniform float u_seed;
 uniform float u_time;
 uniform float u_perlin_freq;
 uniform float u_perlin_amp;
+uniform float u_cloud_speed_x;
+uniform float u_cloud_speed_y;
 uniform vec3 u_clouds_color;
 uniform vec3 u_sky_color;
 
@@ -33,7 +35,7 @@ float stackedWavedPerlin(vec2 uv) {
   float n = 0.0;
   float amp = u_perlin_amp;
   float freq = u_perlin_freq;
-  vec2 time_offset = vec2(-u_time * freq * 0.05, u_time * freq * 0.03) + u_seed * 3794.272;
+  vec2 time_offset = vec2(-u_time * freq * u_cloud_speed_x, u_time * freq * u_cloud_speed_y) + u_seed * 3794.272;
 
   for (int i = 0; i < 8; i++) {
     n += perlin(uv * freq + time_offset) * amp;

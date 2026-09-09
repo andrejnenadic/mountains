@@ -92,7 +92,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         freq: 1.2,
         amp: 1.05,
         sky: [0.4, 0.7, 0.9],
-        clouds: [1, 1, 1],
+          clouds: [1, 1, 1],
+        speedX: 0.12,
+        speedY: 0.08,
       },
     };
   }
@@ -142,6 +144,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     time: gl.getUniformLocation(cloudsProgram, "u_time"),
     freq: gl.getUniformLocation(cloudsProgram, "u_perlin_freq"),
     amp: gl.getUniformLocation(cloudsProgram, "u_perlin_amp"),
+    speedX: gl.getUniformLocation(cloudsProgram, "u_cloud_speed_x"),
+    speedY: gl.getUniformLocation(cloudsProgram, "u_cloud_speed_y"),
     sky: gl.getUniformLocation(cloudsProgram, "u_sky_color"),
     clouds: gl.getUniformLocation(cloudsProgram, "u_clouds_color"),
   };
@@ -183,6 +187,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const cloudsConfig = activeConfig.clouds || {
       freq: 1.2,
       amp: 1.05,
+      speedX: 0.12,
+      speedY: 0.08,
       sky: [0.4, 0.7, 0.9],
       clouds: [1, 1, 1],
     };
@@ -196,6 +202,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     gl.uniform1f(cloudsUniformLocs.time, now / 1000);
     gl.uniform1f(cloudsUniformLocs.freq, cloudsConfig.freq);
     gl.uniform1f(cloudsUniformLocs.amp, cloudsConfig.amp);
+    gl.uniform1f(cloudsUniformLocs.speedX, cloudsConfig.speedX ?? 0.12);
+    gl.uniform1f(cloudsUniformLocs.speedY, cloudsConfig.speedY ?? 0.08);
     gl.uniform3fv(cloudsUniformLocs.sky, cloudsConfig.sky);
     gl.uniform3fv(cloudsUniformLocs.clouds, cloudsConfig.clouds);
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);
