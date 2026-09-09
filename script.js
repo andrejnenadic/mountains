@@ -1,3 +1,22 @@
+const layers = [
+  {
+    seed: 12.4,
+    frequency: 0.7,
+    amplitude: 0.22,
+    detail: 0.03,
+    yOffset: 0.15,
+    color: [0, 0, 1, 1],
+  },
+  {
+    seed: 83.1,
+    frequency: 1.0,
+    amplitude: 0.35,
+    detail: 0.06,
+    yOffset: 0.0,
+    color: [1, 0, 0, 1],
+  },
+];
+
 const FPS = 60;
 const FRAME_TIME = 1000 / FPS;
 
@@ -71,6 +90,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.enable(gl.BLEND);
+
   function onResize() {
     const dpr = window.devicePixelRatio;
 
@@ -87,6 +109,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const program = createProgram(gl, frag, vert);
   if (!program) return;
+
+  const uniformLocs = {
+    seed: gl.getUniformLocation(program, "u_seed"),
+    frequency: gl.getUniformLocation(program, "u_frequency"),
+    amplitude: gl.getUniformLocation(program, "u_amplitude"),
+    detail: gl.getUniformLocation(program, "u_detail"),
+    yOffset: gl.getUniformLocation(program, "u_yOffset"),
+    color: gl.getUniformLocation(program, "u_color"),
+  };
 
   const vao = createBuffers(gl);
 
@@ -121,6 +152,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(program);
     gl.bindVertexArray(vao);
-    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);
+
+    for (const layer of layers) {
+      gl.uniform1f(uniformLocs.seed, layer.seed);
+      gl.uniform1f(uniformLocs.frequency, layer.frequency);
+      gl.uniform1f(uniformLocs.amplitude, layer.amplitude);
+      gl.uniform1f(uniformLocs.detail, layer.detail);
+      gl.uniform1f(uniformLocs.yOffset, layer.yOffset);
+      gl.uniform4fv(uniformLocs.color, layer.color);
+
+      gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);
+    }
   }
 });

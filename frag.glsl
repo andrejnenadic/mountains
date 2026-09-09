@@ -6,13 +6,17 @@ in vec2 v_uv;
 out vec4 fragColor;
 
 uniform float u_seed;
+uniform float u_frequency;
+uniform float u_amplitude;
+uniform float u_detail;
+uniform float u_yOffset;
+
+uniform vec4 u_color;
 
 float hash(vec2 p) {
   p += u_seed;
 
-  return fract(
-    sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123
-  );
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
 }
 
 float noise(vec2 p) {
@@ -27,19 +31,14 @@ float noise(vec2 p) {
   float c = hash(i + vec2(0.0, 1.0));
   float d = hash(i + vec2(1.0, 1.0));
 
-  return mix(
-    mix(a, b, f.x),
-    mix(c, d, f.x),
-    f.y
-  );
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
 float fbm(vec2 p) {
   float value = 0.0;
   float amplitude = 0.5;
 
-  for (int i = 0; i < 4; i++)
-  {
+  for (int i = 0; i < 4; i++) {
     value += noise(p) * amplitude;
 
     p *= 2.0;
@@ -50,14 +49,13 @@ float fbm(vec2 p) {
 }
 
 float mountainHeight(float x) {
-  float large = fbm(vec2(x * 5., 0.0));
-  large = pow(large, 3.);
+  float large = fbm(vec2(x * u_frequency + u_seed, u_seed));
 
-  float medium = fbm(vec2(x * 10., 20.0));
+  large = pow(large, 1.7);
 
-  return 0.1
-    + large * 0.8
-    + medium * 0.3;
+  float medium = fbm(vec2(x * u_frequency * 3.0 + u_seed, u_seed + 20.0));
+
+  return u_yOffset + large * u_amplitude + medium * u_detail;
 }
 
 void main() {
@@ -68,11 +66,5 @@ void main() {
   float aa_scale = .5;
   float mask = smoothstep(-aa_scale * aa, aa_scale * aa, distance);
 
-  vec3 mountainColor = vec3(1.);
-  vec3 backgroundColor = vec3(0.04, 0.06, 0.09);
-
-  fragColor = vec4(
-      mix(backgroundColor, mountainColor, mask),
-      1.0
-    );
+  fragColor = mask * u_color;
 }
