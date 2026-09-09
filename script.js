@@ -126,6 +126,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const cloudsUniformLocs = {
     seed: gl.getUniformLocation(cloudsProgram, "u_seed"),
     time: gl.getUniformLocation(cloudsProgram, "u_time"),
+    freq: gl.getUniformLocation(cloudsProgram, "u_perlin_freq"),
+    amp: gl.getUniformLocation(cloudsProgram, "u_perlin_amp"),
     sky: gl.getUniformLocation(cloudsProgram, "u_sky_color"),
     clouds: gl.getUniformLocation(cloudsProgram, "u_clouds_color"),
   };
@@ -171,6 +173,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     gl.useProgram(cloudsProgram);
     gl.uniform1f(cloudsUniformLocs.seed, seed);
     gl.uniform1f(cloudsUniformLocs.time, now / 1000);
+    gl.uniform1f(cloudsUniformLocs.freq, 1);
+    gl.uniform1f(cloudsUniformLocs.amp, 1);
     gl.uniform3fv(cloudsUniformLocs.sky, [0.4, 0.7, 0.9]);
     gl.uniform3fv(cloudsUniformLocs.clouds, [1, 1, 1]);
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);
