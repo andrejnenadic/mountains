@@ -1,3 +1,6 @@
+const FPS = 60;
+const FRAME_TIME = 1000 / FPS;
+
 async function compileShader(gl, name, type) {
   const code = await fetch(name).then((x) => x.text());
   const shader = gl.createShader(type);
@@ -68,6 +71,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  function onResize() {
+    const dpr = window.devicePixelRatio;
+
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  window.addEventListener("resize", onResize);
+  onResize();
+
   const vert = await compileShader(gl, "./vert.glsl", gl.VERTEX_SHADER);
   const frag = await compileShader(gl, "./frag.glsl", gl.FRAGMENT_SHADER);
   if (!vert || !frag) return;
@@ -77,8 +90,37 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const vao = createBuffers(gl);
 
-  gl.clear(gl.COLOR_BUFFER_BIT);
-  gl.useProgram(program);
-  gl.bindVertexArray(vao);
-  gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);
+  let paused = document.hidden;
+  let lastFrameTime = 0;
+  let accumulator = 0;
+
+  document.addEventListener("visibilitychange", () => {
+    paused = document.hidden;
+    lastFrameTime = performance.now();
+  });
+
+  requestAnimationFrame(animate);
+  function animate(now) {
+    requestAnimationFrame(animate);
+
+    if (paused) {
+      return;
+    }
+
+    let frameDelta = now - lastFrameTime;
+    lastFrameTime = now;
+
+    // Prevent huge spikes even if browser hiccups
+    frameDelta = Math.min(frameDelta, 100);
+
+    accumulator += frameDelta;
+    if (accumulator < FRAME_TIME) {
+      return;
+    }
+
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(program);
+    gl.bindVertexArray(vao);
+    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);
+  }
 });
