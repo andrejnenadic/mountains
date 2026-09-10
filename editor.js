@@ -471,6 +471,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    updateProfileLabel();
+
     const activeConfig = getActiveConfig();
     const activeLayers = activeConfig.layers || [];
     const cloudSettings = activeConfig.clouds || sanitizeCloudSettings();

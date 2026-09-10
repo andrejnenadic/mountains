@@ -52,6 +52,7 @@ float stackedWavedPerlin(vec2 uv) {
 vec3 skyTexture(vec2 uv) {
   float m = stackedWavedPerlin(uv);
   vec3 gradient_sky = mix(u_sky_color * 0.95, u_sky_color, uv.y);
+  // return mix(gradient_sky, u_clouds_color, m); // cool smoke like clouds bg
   return mix(gradient_sky, u_clouds_color, smoothstep(0.4, 0.5, m * 1.5));
 }
 
