@@ -102,16 +102,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   gl.enable(gl.BLEND);
 
-  function onResize() {
-    const dpr = window.devicePixelRatio;
-
-    canvas.width = canvas.clientWidth * dpr;
-    canvas.height = canvas.clientHeight * dpr;
-    gl.viewport(0, 0, canvas.width, canvas.height);
-  }
-  window.addEventListener("resize", onResize);
-  onResize();
-
   const mountainsProgram = await createProgram(
     gl,
     "./frag.glsl",
@@ -196,6 +186,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     accumulator = Math.min(accumulator, FRAME_TIME);
     accumulator -= FRAME_TIME;
 
+    draw(now);
+  }
+
+  function draw(now) {
     const activeConfig = getActiveConfig();
     const activeLayers = activeConfig.layers || [];
     const cloudsConfig = activeConfig.clouds || {
@@ -241,4 +235,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0);
     }
   }
+
+  function onResize() {
+    const dpr = window.devicePixelRatio;
+
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    draw(performance.now());
+  }
+  window.addEventListener("resize", onResize);
+  onResize();
 });
