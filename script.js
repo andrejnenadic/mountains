@@ -1,4 +1,4 @@
-const FPS = 60;
+const FPS = 24;
 const FRAME_TIME = 1000 / FPS;
 
 async function compileShader(gl, name, type) {
@@ -173,19 +173,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     requestAnimationFrame(animate);
 
     if (paused) {
+      lastFrameTime = now;
+      accumulator = 0;
       return;
+    }
+
+    if (!lastFrameTime) {
+      lastFrameTime = now;
     }
 
     let frameDelta = now - lastFrameTime;
     lastFrameTime = now;
 
-    // prevent huge spikes even if browser hiccups
-    frameDelta = Math.min(frameDelta, 100);
-
+    // prevent huge spikes even if browser hiccups, but never catch up
+    frameDelta = Math.min(frameDelta, 1000);
     accumulator += frameDelta;
+
     if (accumulator < FRAME_TIME) {
       return;
     }
+
+    accumulator = Math.min(accumulator, FRAME_TIME);
+    accumulator -= FRAME_TIME;
 
     const activeConfig = getActiveConfig();
     const activeLayers = activeConfig.layers || [];
